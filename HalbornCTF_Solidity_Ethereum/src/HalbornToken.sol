@@ -16,11 +16,13 @@ contract HalbornToken is
 {
     address public halbornLoans;
 
+    // Modifier that checks if the sender account is from HalbornLoans contract
     modifier onlyLoans() {
         require(msg.sender == halbornLoans, "Caller is not HalbornLoans");
         _;
     }
 
+    // Here all the imports are initialized
     function initialize() external initializer {
         __ERC20_init("HalbornToken", "HT");
         __UUPSUpgradeable_init();
@@ -28,15 +30,16 @@ contract HalbornToken is
         __Multicall_init();
     }
 
+    // Here you can set some loan account
     function setLoans(address halbornLoans_) external onlyOwner {
         require(halbornLoans_ != address(0), "Zero Address");
         halbornLoans = halbornLoans_;
     }
-
+    // In this function a token related to some account an for some amount is minted
     function mintToken(address account, uint256 amount) external onlyLoans {
         _mint(account, amount);
     }
-
+    // In this function a token related to some account and for some amount is burned
     function burnToken(address account, uint256 amount) external onlyLoans {
         _burn(account, amount);
     }
