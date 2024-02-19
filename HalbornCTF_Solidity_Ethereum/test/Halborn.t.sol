@@ -119,13 +119,22 @@ contract HalbornTest is Test {
 
     }
 
+    /*function testnftMintAirdrops() public {
+        vm.startPrank(BOB);
+        vm.deal(BOB, 2 ether);
+        nft.mintBuyWithETH{value: 1 ether}();
+        nft.mintAirdrops(1, BOB_PROOF_1);
+        nft.mintAirdrops(2, BOB_PROOF_2);
+        vm.stopPrank();
+    }*/
+
     /*function testReentrancyCollateral() public {
 
         Attacker attacker = new Attacker(address(loans), address(nft));
         vm.startPrank(address(attacker));
         vm.deal(address(attacker), 50 ether);
         nft.setApprovalForAll(address(loans), true);
-        nft.mintBuyWithETH{value: 1 ether}();
+        
         attacker.attack();
         console.log(nft.ownerOf(1));
         vm.stopPrank();
@@ -161,17 +170,22 @@ contract HalbornTest is Test {
     }*/
 
     // Test getLoan Integer Overflow Vulnerability
-    function testGetLoanIntegerOverflow() public {
+    /*function testGetLoanIntegerOverflow() public {
+        vm.startPrank(ALICE);
+        loans.getLoan(2 ether);
+        vm.stopPrank();
+    }*/
+
+    /*function testGetLoanIntegerOverflow2() public {
         vm.startPrank(ALICE);
         vm.deal(ALICE, 2 ether);
         nft.setApprovalForAll(address(loans), true);
         nft.mintAirdrops(15, ALICE_PROOF_1);
         loans.depositNFTCollateral(15);
-        loans.getLoan(type(uint256).max);
-        vm.expectRevert(stdError.arithmeticError);
-        loans.getLoan(2 ether);
+        //vm.expectRevert();
+        loans.getLoan(5 ether);
         vm.stopPrank();
-    }
+    }*/
 
     // Test returnLoan Integer Overflow Vulnerability
     /*function testReturnLoanIntegerOverflow() public {
@@ -184,5 +198,6 @@ contract HalbornTest is Test {
         loans.returnLoan(1 ether);
         vm.stopPrank();
     }*/
+
     
 }

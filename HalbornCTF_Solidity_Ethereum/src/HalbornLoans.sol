@@ -78,18 +78,16 @@ contract HalbornLoans is Initializable, UUPSUpgradeable, MulticallUpgradeable, I
         delete idsCollateral[id];
     }
 
-    using SafeMath for uint256;
     // The next function allows the sender to get a loan
     function getLoan(uint256 amount) external {
         // The only condition is that the collateral of the sender is less than the amount of loan 
         // requested
         require(
-            totalCollateral[msg.sender] - usedCollateral[msg.sender] >=
-                collateralPrice,
-            "Collateral unavailable"
+            totalCollateral[msg.sender]  >= usedCollateral[msg.sender] + amount,
+            "Not enough collateral"
         );
         // Then the used collateral is increased with the amount
-        usedCollateral[msg.sender] = usedCollateral[msg.sender].add(amount);
+        usedCollateral[msg.sender] += amount;
         // And a token is generated linking the user account to the amount requested in the loan
         token.mintToken(msg.sender, amount);
     }
