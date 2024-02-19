@@ -187,17 +187,19 @@ contract HalbornTest is Test {
         vm.stopPrank();
     }*/
 
-    // Test returnLoan Integer Overflow Vulnerability
-    /*function testReturnLoanIntegerOverflow() public {
+    // Test returnLoan Vulnerability
+    function testReturnLoanIntegerOverflow() public {
         vm.startPrank(BOB);
-        // We get a Loan for the amount of max uint
-        loans.getLoan(type(uint256).max);
-        // Here we include an expectRevert statement in order to see that arithmeticError
-        vm.expectRevert(stdError.arithmeticError);
-        // Here when we call returnLoan we get that arithmetic error
-        loans.returnLoan(1 ether);
+        vm.deal(BOB, 2 ether);
+        nft.setApprovalForAll(address(loans), true);
+        nft.mintAirdrops(21, BOB_PROOF_1);
+        loans.depositNFTCollateral(21);
+        loans.getLoan(2 ether);
+        loans.returnLoan(2 ether);
+        vm.expectRevert();
+        loans.getLoan(2 ether);
         vm.stopPrank();
-    }*/
+    }
 
     
 }

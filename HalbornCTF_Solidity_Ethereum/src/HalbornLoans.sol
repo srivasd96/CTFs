@@ -99,7 +99,7 @@ contract HalbornLoans is Initializable, UUPSUpgradeable, MulticallUpgradeable, I
         // Also we require that the balance of the token is greater or equal too
         require(token.balanceOf(msg.sender) >= amount, "Not enough token balance");
         // We update the collateral increasing it with the amount of the loan
-        usedCollateral[msg.sender] += amount;
+        usedCollateral[msg.sender] -= amount;
         // Finally we destroy the token with the sender and amount details
         token.burnToken(msg.sender, amount);
     }
