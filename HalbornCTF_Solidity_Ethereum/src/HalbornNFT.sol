@@ -66,9 +66,8 @@ contract HalbornNFT is
     function mintBuyWithETH() external payable {
         require(msg.value == price, "Invalid Price");
 
-        unchecked {
-            idCounter++;
-        }
+        require(idCounter < type(uint256).max, "idCounter max value reached");
+        idCounter++;
 
         _safeMint(msg.sender, idCounter, "");
     }

