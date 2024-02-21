@@ -74,7 +74,10 @@ contract HalbornNFT is
 
     // Here you can withdraw some amount of ETH (only the owner of the NFT)
     function withdrawETH(uint256 amount) external onlyOwner {
-        payable(owner()).transfer(amount);
+        require(amount <= address(this).balance, "Insufficient contract balance");
+
+        (bool success, ) = owner().call{value: amount}("");
+        require(success, "Ether withdrawal failed");
     }
 
     function _authorizeUpgrade(address) internal override {}
