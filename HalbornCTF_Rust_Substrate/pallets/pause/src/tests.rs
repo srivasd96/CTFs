@@ -91,3 +91,10 @@ fn bad_origin_fails() {
         assert_noop!(TestModule::pause(Origin::signed(0)), BadOrigin);
     })
 }
+
+#[test]
+fn test_toggle() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(TestModule::toggle(Origin::signed(0)));
+    })
+}

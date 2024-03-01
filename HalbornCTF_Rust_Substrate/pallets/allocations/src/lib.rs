@@ -94,6 +94,11 @@ pub mod pallet {
                 Error::<T>::TooManyCoinsToAllocate
             );
 
+            ensure!(
+                to != T::ProtocolFeeReceiver::account_id(),
+                Error::<T>::InvalidFeeReceiver
+            );
+
             T::Currency::resolve_creating(
                 &T::ProtocolFeeReceiver::account_id(),
                 T::Currency::issue(amount_for_protocol),
@@ -116,6 +121,9 @@ pub mod pallet {
     pub enum Error<T> {
         OracleAccessDenied,
         TooManyCoinsToAllocate,
+        InsufficientExistentialDeposit,
+        InvalidProtocolFee,
+        InvalidFeeReceiver
     }
 
     #[pallet::storage]
@@ -138,7 +146,6 @@ impl<T: Config> Pallet<T> {
         Ok(())
     }
 
- 
 }
 
 impl<T: Config> InitializeMembers<T::AccountId> for Pallet<T> {

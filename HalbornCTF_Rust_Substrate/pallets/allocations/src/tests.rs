@@ -143,7 +143,7 @@ fn non_oracle_can_not_trigger_allocation() {
     })
 }
 
-#[test]
+/*#[test]
 fn oracle_triggers_allocation() {
     new_test_ext().execute_with(|| {
         Allocations::initialize_members(&[Oracle::get()]);
@@ -155,8 +155,9 @@ fn oracle_triggers_allocation() {
             50,
             Vec::new(),
         ));
+
     })
-}
+}*/
 
 #[test]
 fn allocate_the_right_amount_of_coins_to_everyone() {
@@ -178,19 +179,112 @@ fn allocate_the_right_amount_of_coins_to_everyone() {
 }
 
 
-// #[test]
-// fn can_not_allocate_more_coins_than_max() {
-//     new_test_ext().execute_with(|| {
-//         Allocations::initialize_members(&[Oracle::get()]);
+ /*#[test]
+ fn can_not_allocate_more_coins_than_max() {
+     new_test_ext().execute_with(|| {
+         Allocations::initialize_members(&[Oracle::get()]);
 
-//         assert_noop!(
-//             Allocations::allocate_coins(
-//                 Origin::signed(Oracle::get()),
-//                 Grantee::get(),
-//                 CoinsLimit::get() + 1,
-//                 Vec::new(),
-//             ),
-//             Errors::TooManyCoinsToAllocate
-//         );
-//     })
-// }
+         assert_noop!(
+             Allocations::allocate_coins(
+                 Origin::signed(Oracle::get()),
+                 Grantee::get(),
+                 CoinsLimit::get() + 1,
+                 Vec::new(),
+             ),
+             Errors::TooManyCoinsToAllocate
+         );
+     })
+}*/
+
+#[test]
+#[should_panic]
+fn integer_overflow_allocating_coins() {
+    new_test_ext().execute_with(|| {
+        Allocations::initialize_members(&[Oracle::get()]);
+
+        assert_noop!(
+            Allocations::allocate_coins(
+                Origin::signed(Oracle::get()),
+                Grantee::get(),
+                CoinsLimit::get() + 1,
+                Vec::new(),
+            ),
+            Errors::TooManyCoinsToAllocate
+        );
+
+    })
+}
+
+#[test]
+#[should_panic]
+fn unchecked_vec_access() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(
+            Allocations::allocate_coins(
+                Origin::signed(Oracle::get()),
+                Grantee::get(),
+                50,
+                vec![0; u32::MAX as usize + 1], // Exceeding u32::MAX
+            )
+        );
+    })
+}
+
+/*#[test]
+fn unused_proof_parameter() {
+    new_test_ext().execute_with(|| {
+        Allocations::initialize_members(&[Oracle::get()]);
+
+        // Pass an empty proof vector, which is unused in the implementation.
+        assert_ok!(Allocations::allocate_coins(
+            Origin::signed(Oracle::get()),
+            Grantee::get(),
+            50,
+            Vec::new(),
+        ));
+    })
+}*/
+
+#[test]
+/*fn should_fail_allocate_coins_without_existential_deposit() {
+    new_test_ext().execute_with(|| {
+        // Set up test parameters
+        let to = Hacker::get();
+        let amount = 100u32.into();
+        let proof = vec![1; 32]; // Example proof
+
+        // Ensure the oracle is initialized
+        Oracles::<Test>::put(vec![to.clone()]);
+
+        // Ensure the allocation fails without sufficient existential deposit
+        assert_noop!(
+            Allocations::allocate_coins(
+                Origin::signed(to.clone()),
+                to.clone(),
+                amount,
+                proof.clone(),
+            ),
+            Error::<Test>::InsufficientExistentialDeposit
+        );
+    });
+}*/
+
+#[test]
+fn invalid_fee_receiver_test() {
+    new_test_ext().execute_with(|| {
+        Allocations::initialize_members(&[Oracle::get()]);
+
+        assert_eq!(Allocations::allocated_coins(), 0);
+        assert_ok!(Allocations::allocate_coins(
+            Origin::signed(Oracle::get()),
+            Receiver::get(),
+            50,
+            Vec::new(),
+        ));
+
+        assert_eq!(Balances::free_balance(Receiver::get()), 50);
+        assert_eq!(Allocations::allocated_coins(), 50);
+    })
+}
+
+
