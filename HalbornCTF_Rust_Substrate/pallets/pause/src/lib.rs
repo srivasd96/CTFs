@@ -41,8 +41,8 @@ pub mod pallet {
                 .map(|_| ())
                 .or_else(ensure_root)?;
 
-            <Paused<T>>::put(Self::paused());
-            Self::deposit_event(Event::StatusChanged(Self::paused()));
+            <Paused<T>>::put(!Self::paused());
+            Self::deposit_event(Event::StatusChanged(!Self::paused()));
 
             Ok(().into())
         }
@@ -52,6 +52,8 @@ pub mod pallet {
             T::PauseOrigin::try_origin(origin)
                 .map(|_| ())
                 .or_else(ensure_root)?;
+
+            ensure!(!Self::paused(), Error::<T>::AlreadyPaused);
             
             <Paused<T>>::put(true);
             
@@ -66,6 +68,8 @@ pub mod pallet {
             T::PauseOrigin::try_origin(origin)
                 .map(|_| ())
                 .or_else(ensure_root)?;
+
+            ensure!(Self::paused(), Error::<T>::NotPaused);
     
             <Paused<T>>::put(Self::paused());
             Self::deposit_event(Event::StatusChanged(false));
@@ -82,6 +86,12 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// Shutdown state was toggled, to either on or off.
         StatusChanged(bool),
+    }
+
+    #[pallet::error]
+    pub enum Error<T> {
+        AlreadyPaused,
+        NotPaused,
     }
 
     #[pallet::storage]

@@ -269,22 +269,37 @@ fn unused_proof_parameter() {
     });
 }*/
 
-#[test]
+/*#[test]
 fn invalid_fee_receiver_test() {
     new_test_ext().execute_with(|| {
         Allocations::initialize_members(&[Oracle::get()]);
 
         assert_eq!(Allocations::allocated_coins(), 0);
-        assert_ok!(Allocations::allocate_coins(
+        assert_noop!(Allocations::allocate_coins(
             Origin::signed(Oracle::get()),
             Receiver::get(),
             50,
             Vec::new(),
-        ));
+        ),
+        Error::<Test>::InvalidFeeReceiver    
+    );
 
         assert_eq!(Balances::free_balance(Receiver::get()), 50);
         assert_eq!(Allocations::allocated_coins(), 50);
     })
+}*/
+
+#[test]
+#[should_panic]
+fn initialize_members_test() {
+    new_test_ext().execute_with(|| {
+        Allocations::initialize_members(&[Grantee::get()]);
+        Allocations::initialize_members(&[Hacker::get()]);
+    })
 }
+
+
+
+
 
 

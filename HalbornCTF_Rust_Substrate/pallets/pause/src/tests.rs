@@ -62,6 +62,8 @@ impl Config for Test {
     type WeightInfo = ();
 }
 
+type Errors = Error<Test>;
+
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -79,11 +81,11 @@ fn root_pause() {
 }
 
 #[test]
-fn pause_origin_unpause() {
+/*fn pause_origin_unpause() {
     new_test_ext().execute_with(|| {
         assert_ok!(TestModule::unpause(Origin::signed(Admin::get())));
     })
-}
+}*/
 
 #[test]
 fn bad_origin_fails() {
@@ -93,8 +95,33 @@ fn bad_origin_fails() {
 }
 
 #[test]
-fn test_toggle() {
+fn admin_cannot_pause_when_paused() {
     new_test_ext().execute_with(|| {
-        assert_ok!(TestModule::toggle(Origin::signed(0)));
+        assert_ok!(TestModule::pause(Origin::signed(Admin::get())));
+        assert_noop!(TestModule::pause(Origin::signed(Admin::get())
+        ),
+        Errors::AlreadyPaused
+    );
     })
 }
+
+#[test]
+fn admin_cannot_unpause_when_unpaused() {
+    new_test_ext().execute_with(|| {
+        assert_noop!(TestModule::unpause(Origin::signed(Admin::get())
+        ),
+        Errors::NotPaused
+    );
+    })
+}
+
+#[test]
+fn toggle_testing() {
+    new_test_ext().execute_with(|| {
+        assert_ok!(TestModule::pause(Origin::signed(Admin::get())));
+        assert_ok!(TestModule::toggle(Origin::signed(Admin::get())));
+        assert_ok!(TestModule::pause(Origin::signed(Admin::get())));
+    })
+}
+
+

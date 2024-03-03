@@ -5,6 +5,7 @@ mod benchmarking;
 mod tests;
 
 use sp_std::prelude::*;
+use sp_runtime::DispatchError;
 
 use frame_support::{
     ensure,
@@ -105,6 +106,9 @@ pub mod pallet {
             );
             T::Currency::resolve_creating(&to, T::Currency::issue(amount_for_grantee));
 
+            // Emiting the event once the allocation is made
+            Self::deposit_event(Event::NewCoinAllocation(to.clone(), amount, amount_for_grantee, _proof));
+
             Ok(().into())
         }
 
@@ -123,7 +127,10 @@ pub mod pallet {
         TooManyCoinsToAllocate,
         InsufficientExistentialDeposit,
         InvalidProtocolFee,
-        InvalidFeeReceiver
+        InvalidFeeReceiver,
+        EmptyOracleList,
+        DuplicateOracle,
+        StorageError,
     }
 
     #[pallet::storage]
@@ -150,6 +157,13 @@ impl<T: Config> Pallet<T> {
 
 impl<T: Config> InitializeMembers<T::AccountId> for Pallet<T> {
     fn initialize_members(init: &[T::AccountId]) {
-        <Oracles<T>>::put(init);
+        if !init.is_empty() {
+            assert!(<Oracles<T>>::get().is_empty(), "The oracle list is already initialized");
+            <Oracles<T>>::put(init);
+        } else {
+            panic!("There oracle list is empty");
+        }
     }
 }
+
+
