@@ -26,3 +26,20 @@ pub fn process_instruction(
         Ok(())
     }
 }
+
+
+#[cfg(test)]
+mod test {
+    use {
+        super::*,
+        assert_matches::*,
+        solana_program::instruction::{AccountMeta, Instruction},
+        solana_program_test::*,
+        solana_sdk::{signature::Signer, transaction::Transaction},
+    };
+
+    #[tokio::test]
+    async fn test_transaction() {
+        // To insert testcode here
+    }
+}

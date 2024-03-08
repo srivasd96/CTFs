@@ -19,6 +19,13 @@ num-traits = "0.2"
 thiserror = "1.0"
 spl-token = { version = "3.5.0", features = [ "no-entrypoint" ] }
 
+[dev-dependencies]
+assert_matches = "1.4.0"
+solana-logger = "~1.16"
+solana-program-test = "~1.16"
+solana-sdk = "~1.16"
+solana-validator = "~1.16"
+
 [lib]
 name = "ctf_solana_farm"
 crate-type = ["cdylib", "lib"]
