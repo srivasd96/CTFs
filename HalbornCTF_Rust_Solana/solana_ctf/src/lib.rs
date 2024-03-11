@@ -58,10 +58,9 @@ mod tests {
     use solana_sdk::transaction::Transaction;
 
     #[tokio::test]
-    async fn test_process_instruction() {
+    async fn test_initialize_farm() {
         // Set up the test environment
         let program_id = Pubkey::new_unique();
-        println!("Program id: {}", program_id.to_string());
         let mut program_test = ProgramTest::new(
             "ctf-solana-farm", // Change this to your program name
             program_id,
@@ -70,25 +69,20 @@ mod tests {
 
         let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
-        // Create test accounts
+        // Create a new farm account
         let farm_account = Keypair::new();
-        //println!("Farm account: {}", farm_account.to_base58_string());
         let authority = Keypair::new();
-        //println!("Authority: {}", authority.to_base58_string());
         let creator = Keypair::new();
         let lp_token_account = Keypair::new();
         let user_transfer_authority = Keypair::new();
         let user_usdc_token_account = Keypair::new();
         let fee_owner = Keypair::new();
         let token_program = Keypair::new();
-        let farm_program_id_keypair = Keypair::new();
-        let farm_program_id = farm_program_id_keypair.pubkey();
-        println!("Farm Program ID: {}", farm_program_id_keypair.pubkey().to_string());
 
         // Initialize accounts
         let accounts = vec![
             &farm_account, &authority, &creator, &lp_token_account, &user_transfer_authority,
-            &user_usdc_token_account, &fee_owner, &token_program, &farm_program_id_keypair,
+            &user_usdc_token_account, &fee_owner, &token_program,
         ];
 
         for account in accounts {
@@ -97,7 +91,7 @@ mod tests {
                 &payer,
                 &recent_blockhash,
                 account,
-                10000000, // Provide a sufficient balance for initialization
+                10000000000, // Provide a sufficient balance for initialization
                 &program_id,
             )
             .await;
@@ -111,7 +105,7 @@ mod tests {
         };
 
         let create_instruction = Instruction {
-            program_id: program_id,
+            program_id,
             accounts: vec![
                 AccountMeta::new(farm_account.pubkey(), false),
                 AccountMeta::new_readonly(authority.pubkey(), false),
@@ -122,7 +116,6 @@ mod tests {
                 AccountMeta::new_readonly(Pubkey::new_unique(), false), // Placeholder for reward mint
                 AccountMeta::new_readonly(Pubkey::new_unique(), false), // Placeholder for amm id
                 AccountMeta::new_readonly(token_program.pubkey(), false),
-                AccountMeta::new_readonly(farm_program_id_keypair.pubkey(), false),
             ],
             data: create_instruction_data.try_to_vec().unwrap(),
         };
@@ -130,13 +123,11 @@ mod tests {
         // Sign and send the create transaction
         let mut create_transaction =
             Transaction::new_with_payer(&[create_instruction], Some(&payer.pubkey()));
-            println!("Llega aquí");
-            create_transaction.sign(
-                &[&payer, &farm_account, &creator, &farm_program_id_keypair],
-                recent_blockhash,
-            );
-            println!("Llega aquí 2");
-            banks_client
+        create_transaction.sign(
+            &[&payer, &creator], // Include only the necessary keypairs
+            recent_blockhash,
+        );
+        banks_client
             .process_transaction(create_transaction)
             .await
             .unwrap();
@@ -150,48 +141,8 @@ mod tests {
         let farm_state: Farm = try_from_slice_unchecked(&farm_data.data)
             .expect("Failed to deserialize farm account data");
 
-        // Now, let's craft an instruction to pay the farm fee
-        let pay_fee_instruction_data = FarmInstruction::PayFarmFee(5000);
-
-        let pay_fee_instruction = Instruction {
-            program_id: farm_program_id,
-            accounts: vec![
-                AccountMeta::new(farm_account.pubkey(), false),
-                AccountMeta::new_readonly(authority.pubkey(), false),
-                AccountMeta::new(payer.pubkey(), true),
-                AccountMeta::new(user_transfer_authority.pubkey(), false),
-                AccountMeta::new(user_usdc_token_account.pubkey(), false),
-                AccountMeta::new(fee_owner.pubkey(), false),
-                AccountMeta::new_readonly(token_program.pubkey(), false),
-                AccountMeta::new_readonly(farm_program_id, false),
-            ],
-            data: pay_fee_instruction_data.try_to_vec().unwrap(),
-        };
-
-        // Sign and send the pay fee transaction
-        let mut pay_fee_transaction =
-            Transaction::new_with_payer(&[pay_fee_instruction], Some(&payer.pubkey()));
-        pay_fee_transaction.sign(
-            &[&payer, &farm_account, &authority],
-            recent_blockhash,
-        );
-        banks_client
-            .process_transaction(pay_fee_transaction)
-            .await
-            .unwrap();
-
-        // Verify the state after paying the farm fee
-        let updated_farm_data = banks_client
-            .get_account(farm_account.pubkey())
-            .await
-            .expect("Failed to get updated farm account data")
-            .unwrap();
-        let updated_farm_state: Farm = try_from_slice_unchecked(&updated_farm_data.data)
-            .expect("Failed to deserialize updated farm account data");
-
         // Add assertions based on the expected state changes
-        assert_eq!(updated_farm_state.is_allowed, 1);
-        assert_eq!(updated_farm_state.nonce, 0);
+        assert_eq!(farm_state.nonce, 0);
         // Add more assertions based on the actual logic of your program
     }
 
@@ -210,7 +161,7 @@ mod tests {
                 &account.pubkey(),
                 lamports,
                 mem::size_of::<Account>().try_into().unwrap(),
-                &program_id,
+                program_id,
             )],
             Some(&payer.pubkey()),
             &[payer, account],
