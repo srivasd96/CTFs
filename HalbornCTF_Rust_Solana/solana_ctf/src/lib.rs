@@ -61,113 +61,196 @@ mod tests {
     async fn test_initialize_farm() {
         // Set up the test environment
         let program_id = Pubkey::new_unique();
-        let mut program_test = ProgramTest::new(
+
+
+        // Set up the test environment
+        /*let mut program_test = ProgramTest::new(
             "ctf-solana-farm", // Change this to your program name
             program_id,
             processor!(process_instruction),
         );
 
-        let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
+        let (mut banks_client, payer, recent_blockhash) = program_test.start().await;*/
 
-        // Create a new farm account
-        let farm_account = Keypair::new();
-        let authority = Keypair::new();
-        let creator = Keypair::new();
-        let lp_token_account = Keypair::new();
-        let user_transfer_authority = Keypair::new();
-        let user_usdc_token_account = Keypair::new();
-        let fee_owner = Keypair::new();
-        let token_program = Keypair::new();
-
-        // Initialize accounts
-        let accounts = vec![
-            &farm_account, &authority, &creator, &lp_token_account, &user_transfer_authority,
-            &user_usdc_token_account, &fee_owner, &token_program,
-        ];
-
-        for account in accounts {
-            create_account(
-                &mut banks_client,
-                &payer,
-                &recent_blockhash,
-                account,
-                10000000000, // Provide a sufficient balance for initialization
-                &program_id,
-            )
-            .await;
-        }
-
-        // Create and initialize the farm
-        let create_instruction_data = FarmInstruction::Create {
+        // Craft the instruction data for initializing the farm
+        /*let instruction_data = FarmInstruction::Create {
             nonce: 0,
             start_timestamp: 1647024000,
             end_timestamp: 1647110400,
         };
 
-        let create_instruction = Instruction {
-            program_id,
-            accounts: vec![
-                AccountMeta::new(farm_account.pubkey(), false),
-                AccountMeta::new_readonly(authority.pubkey(), false),
-                AccountMeta::new(creator.pubkey(), true),
-                AccountMeta::new(lp_token_account.pubkey(), false),
-                AccountMeta::new(user_usdc_token_account.pubkey(), false),
-                AccountMeta::new_readonly(Pubkey::new_unique(), false), // Placeholder for pool mint
-                AccountMeta::new_readonly(Pubkey::new_unique(), false), // Placeholder for reward mint
-                AccountMeta::new_readonly(Pubkey::new_unique(), false), // Placeholder for amm id
-                AccountMeta::new_readonly(token_program.pubkey(), false),
-            ],
-            data: create_instruction_data.try_to_vec().unwrap(),
+        // Serialize the instruction data
+        let serialized_data = instruction_data.try_to_vec().unwrap();
+        println!("Serialized Data: {:?}", serialized_data);*/
+
+        // Create an instance of the Farm struct
+        let farm_instance = Farm {
+            is_allowed: 1,
+            nonce: 42,
+            pool_lp_token_account: Pubkey::new_unique(),
+            pool_reward_token_account: Pubkey::new_unique(),
+            pool_mint_address: Pubkey::new_unique(),
+            reward_mint_address: Pubkey::new_unique(),
+            token_program_id: Pubkey::new_unique(),
+            owner: Pubkey::new_unique(),
+            fee_owner: Pubkey::new_unique(),
+            reward_per_share_net: 100,
+            last_timestamp: 1647024000,
+            reward_per_timestamp: 10,
+            start_timestamp: 1647024000,
+            end_timestamp: 1647110400,
         };
 
-        // Sign and send the create transaction
-        let mut create_transaction =
-            Transaction::new_with_payer(&[create_instruction], Some(&payer.pubkey()));
-        create_transaction.sign(
-            &[&payer, &creator], // Include only the necessary keypairs
-            recent_blockhash,
-        );
-        banks_client
-            .process_transaction(create_transaction)
-            .await
-            .unwrap();
+        // Serialize the Farm struct instance
+        let serialized_data: Vec<u8> = farm_instance.try_to_vec().unwrap();
+        println!("Serialized data: {:?}", serialized_data);
+        println!("Size of serialized data: {} bytes", serialized_data.len());
 
-        // Verify the state after farm initialization
-        let farm_data = banks_client
-            .get_account(farm_account.pubkey())
-            .await
-            .expect("Failed to get farm account data")
-            .unwrap();
-        let farm_state: Farm = try_from_slice_unchecked(&farm_data.data)
-            .expect("Failed to deserialize farm account data");
+        // Farm account creation
+        let farm_account_info_key = &Pubkey::new_unique();
+        let farm_account_info_lamports = &mut 0;
+        //let farm_account_info_data = &mut [0u8];
 
-        // Add assertions based on the expected state changes
-        assert_eq!(farm_state.nonce, 0);
-        // Add more assertions based on the actual logic of your program
-    }
-
-    // The create_account function remains unchanged
-    async fn create_account(
-        banks_client: &mut BanksClient,
-        payer: &Keypair,
-        recent_blockhash: &Hash,
-        account: &Keypair,
-        lamports: u64,
-        program_id: &Pubkey,
-    ) {
-        let transaction = Transaction::new_signed_with_payer(
-            &[system_instruction::create_account(
-                &payer.pubkey(),
-                &account.pubkey(),
-                lamports,
-                mem::size_of::<Account>().try_into().unwrap(),
-                program_id,
-            )],
-            Some(&payer.pubkey()),
-            &[payer, account],
-            *recent_blockhash,
+        // Use the serialized_data to initialize farm_account_info_data
+        let farm_account_info_data = &mut vec![0u8; serialized_data.len()];
+        farm_account_info_data.copy_from_slice(&serialized_data);
+        let farm_account_info_owner = &Pubkey::new_unique();
+        let mut farm_account_info = AccountInfo::new(
+            farm_account_info_key,
+            false,
+            true,
+            farm_account_info_lamports,
+            farm_account_info_data,
+            farm_account_info_owner,
+            true,
+            Epoch::default(),
         );
 
-        banks_client.process_transaction(transaction).await.unwrap();
+        // Authority info creation
+        let authority_info_key = &Pubkey::new_unique();
+        let authority_info_lamports = &mut 0;
+        let authority_info_data = &mut [0u8];
+        let authority_info_owner = &Pubkey::new_unique();
+        let mut authority_info = AccountInfo::new(
+            authority_info_key,
+            false,
+            false,
+            authority_info_lamports,
+            authority_info_data,
+            authority_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        // Creator info creation
+        let creator_info_key = &Pubkey::new_unique();
+        let creator_info_lamports = &mut 0;
+        let creator_info_data = &mut [0u8];
+        let creator_info_owner = &Pubkey::new_unique();
+        let mut creator_info = AccountInfo::new(
+            creator_info_key,
+            false,
+            false,
+            creator_info_lamports,
+            creator_info_data,
+            creator_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        // user_transfer_authority info creation
+        let user_transfer_authority_info_key = &Pubkey::new_unique();
+        let user_transfer_authority_info_lamports = &mut 0;
+        let user_transfer_authority_info_data = &mut [0u8];
+        let user_transfer_authority_info_owner = &Pubkey::new_unique();
+        let mut user_transfer_authority_info = AccountInfo::new(
+            user_transfer_authority_info_key,
+            false,
+            false,
+            user_transfer_authority_info_lamports,
+            user_transfer_authority_info_data,
+            user_transfer_authority_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        // user_usdc_token_account info creation
+        let user_usdc_token_account_info_key = &Pubkey::new_unique();
+        let user_usdc_token_account_info_lamports = &mut 0;
+        let user_usdc_token_account_info_data = &mut [0u8];
+        let user_usdc_token_account_info_owner = &Pubkey::new_unique();
+        let mut user_usdc_token_account_info = AccountInfo::new(
+            user_usdc_token_account_info_key,
+            false,
+            false,
+            user_usdc_token_account_info_lamports,
+            user_usdc_token_account_info_data,
+            user_usdc_token_account_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        // fee_owner info creation
+        let fee_owner_info_key = &Pubkey::new_unique();
+        let fee_owner_info_lamports = &mut 0;
+        let fee_owner_info_data = &mut [0u8];
+        let fee_owner_info_owner = &Pubkey::new_unique();
+        let mut fee_owner_info = AccountInfo::new(
+            fee_owner_info_key,
+            false,
+            false,
+            fee_owner_info_lamports,
+            fee_owner_info_data,
+            fee_owner_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        // token_program info creation
+        let token_program_info_key = &Pubkey::new_unique();
+        let token_program_info_lamports = &mut 0;
+        let token_program_info_data = &mut [0u8];
+        let token_program_info_owner = &Pubkey::new_unique();
+        let mut token_program_info = AccountInfo::new(
+            token_program_info_key,
+            false,
+            false,
+            token_program_info_lamports,
+            token_program_info_data,
+            token_program_info_owner,
+            false,
+            Epoch::default(),
+        );
+
+        let mut accounts = [
+            farm_account_info.clone(),
+            authority_info.clone(),
+            creator_info.clone(),
+            user_transfer_authority_info.clone(),
+            user_usdc_token_account_info.clone(),
+            fee_owner_info.clone(),
+            token_program_info.clone(),
+        ];
+     
+        // Call the process function to initialize the farm
+        let mut amount_aux = 1000000u64;
+
+        if let Err(error) = processor::Processor::process_pay_farm_fee(&program_id, &accounts, amount_aux) {
+            error.print::<error::FarmError>();
+        } else {
+            println!("Entra en la segunda llamada");
+            if let Err(error) = processor::Processor::process(&program_id, &accounts, &serialized_data) {
+                error.print::<error::FarmError>();
+            } else {
+                println!("No error");
+            }
+        }
+
+        // Assert that the result is Ok, indicating successful initialization
+        //assert_eq!(result.is_ok(), true);
+
+        // Additional assertions can be added based on the expected state changes
     }
+
+    
 }

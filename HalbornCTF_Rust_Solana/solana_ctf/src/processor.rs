@@ -18,7 +18,7 @@ use {
             next_account_info,
             AccountInfo,
         },
-        borsh::try_from_slice_unchecked,
+        borsh0_10::try_from_slice_unchecked,
         decode_error::DecodeError,
         entrypoint::ProgramResult,
         msg,
@@ -47,6 +47,7 @@ impl Processor {
         accounts: &[AccountInfo],
         amount: u64,
     ) -> ProgramResult {
+        msg!("Entra");
         let account_info_iter = &mut accounts.iter();
         let farm_id_info = next_account_info(account_info_iter)?;
         let authority_info = next_account_info(account_info_iter)?;
@@ -55,8 +56,9 @@ impl Processor {
         let user_usdc_token_account_info = next_account_info(account_info_iter)?;
         let fee_owner_info = next_account_info(account_info_iter)?;
         let token_program_info = next_account_info(account_info_iter)?;
+        msg!("Entra 1b");
         let mut farm_data = try_from_slice_unchecked::<Farm>(&farm_id_info.data.borrow())?;
-
+        msg!("Entra 2");
         if farm_data.is_allowed == 1 {
             return Err(FarmError::AlreadyInUse.into());
         }
@@ -72,7 +74,7 @@ impl Processor {
         if amount != FARM_FEE {
             return Err(FarmError::InvalidFarmFee.into());
         }
-
+        msg!("Entra 3");
         Self::token_transfer(
             farm_id_info.key,
             token_program_info.clone(), 
@@ -82,9 +84,10 @@ impl Processor {
             farm_data.nonce, 
             amount
         )?;
+        msg!("Entra 4");
 
         farm_data.is_allowed = 1;
-
+        msg!("Entra 5");
         farm_data
             .serialize(&mut *farm_id_info.data.borrow_mut())
             .map_err(|e| e.into())
