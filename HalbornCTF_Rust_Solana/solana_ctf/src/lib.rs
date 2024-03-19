@@ -44,6 +44,8 @@ mod tests {
     use solana_sdk::instruction::AccountMeta;
     use solana_sdk::signature::{Keypair, Signer};
     use solana_sdk::system_instruction;
+    
+    use spl_token::id as TOKEN_PROGRAM_ID;
 
     // Import the necessary types from the solana_program module
     use solana_program::instruction::{Instruction};
@@ -60,71 +62,7 @@ mod tests {
     #[tokio::test]
     async fn test_initialize_farm() {
         // Set up the test environment
-        let program_id = Pubkey::new_unique();
-
-
-        // Set up the test environment
-        /*let mut program_test = ProgramTest::new(
-            "ctf-solana-farm", // Change this to your program name
-            program_id,
-            processor!(process_instruction),
-        );
-
-        let (mut banks_client, payer, recent_blockhash) = program_test.start().await;*/
-
-        // Craft the instruction data for initializing the farm
-        /*let instruction_data = FarmInstruction::Create {
-            nonce: 0,
-            start_timestamp: 1647024000,
-            end_timestamp: 1647110400,
-        };
-
-        // Serialize the instruction data
-        let serialized_data = instruction_data.try_to_vec().unwrap();
-        println!("Serialized Data: {:?}", serialized_data);*/
-
-        // Create an instance of the Farm struct
-        let farm_instance = Farm {
-            is_allowed: 1,
-            nonce: 42,
-            pool_lp_token_account: Pubkey::new_unique(),
-            pool_reward_token_account: Pubkey::new_unique(),
-            pool_mint_address: Pubkey::new_unique(),
-            reward_mint_address: Pubkey::new_unique(),
-            token_program_id: Pubkey::new_unique(),
-            owner: Pubkey::new_unique(),
-            fee_owner: Pubkey::new_unique(),
-            reward_per_share_net: 100,
-            last_timestamp: 1647024000,
-            reward_per_timestamp: 10,
-            start_timestamp: 1647024000,
-            end_timestamp: 1647110400,
-        };
-
-        // Serialize the Farm struct instance
-        let serialized_data: Vec<u8> = farm_instance.try_to_vec().unwrap();
-        println!("Serialized data: {:?}", serialized_data);
-        println!("Size of serialized data: {} bytes", serialized_data.len());
-
-        // Farm account creation
-        let farm_account_info_key = &Pubkey::new_unique();
-        let farm_account_info_lamports = &mut 0;
-        //let farm_account_info_data = &mut [0u8];
-
-        // Use the serialized_data to initialize farm_account_info_data
-        let farm_account_info_data = &mut vec![0u8; serialized_data.len()];
-        farm_account_info_data.copy_from_slice(&serialized_data);
-        let farm_account_info_owner = &Pubkey::new_unique();
-        let mut farm_account_info = AccountInfo::new(
-            farm_account_info_key,
-            false,
-            true,
-            farm_account_info_lamports,
-            farm_account_info_data,
-            farm_account_info_owner,
-            true,
-            Epoch::default(),
-        );
+        let program_id = TOKEN_PROGRAM_ID();
 
         // Authority info creation
         let authority_info_key = &Pubkey::new_unique();
@@ -207,18 +145,62 @@ mod tests {
         );
 
         // token_program info creation
-        let token_program_info_key = &Pubkey::new_unique();
+        let token_program_info_key = &program_id;
         let token_program_info_lamports = &mut 0;
         let token_program_info_data = &mut [0u8];
-        let token_program_info_owner = &Pubkey::new_unique();
+        let token_program_info_owner = program_id;
         let mut token_program_info = AccountInfo::new(
             token_program_info_key,
             false,
             false,
             token_program_info_lamports,
             token_program_info_data,
-            token_program_info_owner,
+            &token_program_info_owner,
             false,
+            Epoch::default(),
+        );
+
+        // Create an instance of the Farm struct
+        let farm_instance = Farm {
+            is_allowed: 0,
+            nonce: 42,
+            pool_lp_token_account: Pubkey::new_unique(),
+            pool_reward_token_account: Pubkey::new_unique(),
+            pool_mint_address: Pubkey::new_unique(),
+            reward_mint_address: Pubkey::new_unique(),
+            token_program_id: Pubkey::new_unique(),
+            owner: *creator_info_key,
+            fee_owner: Pubkey::new_unique(),
+            reward_per_share_net: 100,
+            last_timestamp: 1647024000,
+            reward_per_timestamp: 10,
+            start_timestamp: 1647024000,
+            end_timestamp: 1647110400,
+        };
+
+        // Serialize the Farm struct instance
+        let serialized_data: Vec<u8> = farm_instance.try_to_vec().unwrap();
+        println!("Serialized data: {:?}", serialized_data);
+        println!("Size of serialized data: {} bytes", serialized_data.len());
+
+        // Farm account creation
+        //let farm_account_info_key = &Pubkey::new_unique();
+        let farm_account_info_key = &Pubkey::create_with_seed(&authority_info_key, "farm", &program_id)
+            .expect("Failed to create farm account key");
+        let farm_account_info_lamports = &mut 0;
+
+        // Use the serialized_data to initialize farm_account_info_data
+        let farm_account_info_data = &mut vec![0u8; serialized_data.len()];
+        farm_account_info_data.copy_from_slice(&serialized_data);
+        let farm_account_info_owner = &Pubkey::new_unique();
+        let mut farm_account_info = AccountInfo::new(
+            farm_account_info_key,
+            false,
+            true,
+            farm_account_info_lamports,
+            farm_account_info_data,
+            farm_account_info_owner,
+            true,
             Epoch::default(),
         );
 
@@ -233,24 +215,33 @@ mod tests {
         ];
      
         // Call the process function to initialize the farm
-        let mut amount_aux = 1000000u64;
+        let amount_aux = 5000u64;
+        
+        // Compute the authority address using the program ID, farm account key, and nonce
+        let authority_address = processor::Processor::authority_id(&program_id, farm_account_info_key, farm_instance.nonce)
+        .expect("Failed to compute authority address");
 
-        if let Err(error) = processor::Processor::process_pay_farm_fee(&program_id, &accounts, amount_aux) {
+        println!("Imprimiendo la authority_Address: {}", authority_address);
+
+        accounts[1].key = &authority_address;
+        authority_info.key = &authority_address;
+
+        println!("Imprimiendo authority_info_key: {}", authority_info_key);
+        println!("Imprimiendo authority_info.key: {}", authority_info.key);
+        println!("Imprimiendo *authority_info.key: {}", *authority_info.key);
+        println!("Imprimiendo *authority_info.key dentro de accounts: {}", accounts[1].key);
+
+        // Example instruction data
+        let instruction_data = FarmInstruction::PayFarmFee(amount_aux);
+
+        // Serialize the instruction data
+        let serialized_instruction = instruction_data.try_to_vec().unwrap();
+
+        if let Err(error) = processor::Processor::process(&program_id, &accounts, &serialized_instruction) {
             error.print::<error::FarmError>();
         } else {
-            println!("Entra en la segunda llamada");
-            if let Err(error) = processor::Processor::process(&program_id, &accounts, &serialized_data) {
-                error.print::<error::FarmError>();
-            } else {
-                println!("No error");
-            }
+            println!("No error");
         }
 
-        // Assert that the result is Ok, indicating successful initialization
-        //assert_eq!(result.is_ok(), true);
-
-        // Additional assertions can be added based on the expected state changes
     }
-
-    
 }

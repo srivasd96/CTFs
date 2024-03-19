@@ -66,6 +66,14 @@ impl Processor {
         if *creator_info.key != farm_data.owner {
             return Err(FarmError::WrongManager.into());
         }
+        
+        println!("Program id: {}", program_id);
+        println!("Farm id: {}", farm_id_info.key);
+        println!("Farm data nonce: {}", farm_data.nonce);
+
+        println!("Primera parte del IF: {}", *authority_info.key);
+        println!("Segunda parte del IF: {}", Self::authority_id(program_id, farm_id_info.key, farm_data.nonce)?);
+
 
         if *authority_info.key != Self::authority_id(program_id, farm_id_info.key, farm_data.nonce)? {
             return Err(FarmError::InvalidProgramAddress.into());
@@ -98,6 +106,9 @@ impl Processor {
         my_info: &Pubkey,
         nonce: u8,
     ) -> Result<Pubkey, FarmError> {
+        msg!("Imprime el program id: {}", program_id);
+        msg!("Imprime el my_info: {}", my_info);
+        msg!("Imprime el nonce: {}", nonce);
         Pubkey::create_program_address(&[&my_info.to_bytes()[..32], &[nonce]], program_id)
             .or(Err(FarmError::InvalidProgramAddress))
     }
@@ -111,9 +122,18 @@ impl Processor {
         nonce: u8,
         amount: u64,
     ) -> Result<(), ProgramError> {
+        msg!("Token transfer 1");
         let pool_bytes = pool.to_bytes();
+        msg!("Token transfer 2");
         let authority_signature_seeds = [&pool_bytes[..32], &[nonce]];
+        msg!("Token transfer 3");
         let signers = &[&authority_signature_seeds[..]];
+        msg!("Token transfer 4");
+        msg!("Token program id: {}", token_program.key);
+        msg!("Source pubkey: {}", source.key);
+        msg!("Destination pubkey: {}", destination.key);
+        msg!("Authority pubkey: {}", authority.key);
+        msg!("Amount: {}", amount);
         let ix = spl_token::instruction::transfer(
             token_program.key,
             source.key,
@@ -122,6 +142,7 @@ impl Processor {
             &[],
             amount,
         )?;
+        msg!("Token transfer 5");
         invoke_signed(
             &ix,
             &[source, destination, authority, token_program],
