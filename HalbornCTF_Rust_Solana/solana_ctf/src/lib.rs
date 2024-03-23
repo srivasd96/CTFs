@@ -102,7 +102,7 @@ mod tests {
         solana_sdk::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
         
         let program_id = Pubkey::new_unique();
-
+        println!("Test");
         // Authority info creation
         let authority_info_key = &Pubkey::new_unique();
         let authority_info_lamports = &mut 10000;
