@@ -65,7 +65,7 @@ impl Processor {
         amount: u64,
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
-
+        println!("Entra");
         let farm_id_info = next_account_info(account_info_iter)?;
         let authority_info = next_account_info(account_info_iter)?;
         let creator_info = next_account_info(account_info_iter)?;
@@ -73,34 +73,35 @@ impl Processor {
         let fee_vault_info = next_account_info(account_info_iter)?;
         let token_program_info = next_account_info(account_info_iter)?;
         let mut farm_data = try_from_slice_unchecked::<Farm>(&farm_id_info.data.borrow())?;
-
+        println!("Entra2");
         if farm_data.enabled == 1 {
             return Err(FarmError::AlreadyInUse.into());
         }
-        
+        println!("Entra3");
         if !creator_info.is_signer {
             return Err(FarmError::SignatureMissing.into())
         }
-
+        println!("Entra4");
         if *creator_info.key != farm_data.creator {
             return Err(FarmError::WrongCreator.into());
         }
-
+        println!("Entra5");
         if *authority_info.key != Self::authority_id(program_id, farm_id_info.key, farm_data.nonce)? {
             return Err(FarmError::InvalidProgramAddress.into());
         }
-
+        println!("Entra6");
         if amount != FARM_FEE {
             return Err(FarmError::InvalidFarmFee.into());
         }
-
+        println!("Entra7");
+        println!("{:?}", &fee_vault_info.try_borrow_data()?);
         let fee_vault_owner = TokenAccount::unpack_from_slice(&fee_vault_info.try_borrow_data()?)?.owner;
 
-
+        println!("Entra8");
         if fee_vault_owner != *authority_info.key {
             return Err(FarmError::InvalidFeeAccount.into())
         }
-
+        println!("Entra9");
         Self::token_transfer(
             farm_id_info.key,
             token_program_info.clone(), 
@@ -110,9 +111,9 @@ impl Processor {
             farm_data.nonce, 
             amount
         )?;
-
+        println!("Entra10");
         farm_data.enabled = 1;
-
+        println!("Entra11");
         farm_data
             .serialize(&mut *farm_id_info.data.borrow_mut())
             .map_err(|e| e.into())
@@ -138,23 +139,24 @@ impl Processor {
         nonce: u8,
         amount: u64,
     ) -> Result<(), ProgramError> {
+        println!("Token transfer 1");
         let pool_bytes = pool.to_bytes();
         let authority_signature_seeds = [&pool_bytes[..32], &[nonce]];
         let signers = &[&authority_signature_seeds[..]];
-        
+        println!("Token transfer 2");
         let data = TokenInstruction::Transfer { amount }.pack();
-    
+        println!("Token transfer 3");
         let mut accounts = Vec::with_capacity(4);
         accounts.push(AccountMeta::new(*source.key, false));
         accounts.push(AccountMeta::new(*destination.key, false));
         accounts.push(AccountMeta::new_readonly(*authority.key, true));
-    
+        println!("Token transfer 4");
         let ix = Instruction {
             program_id: *token_program.key,
             accounts,
             data,
         };
-
+        println!("Token transfer 5");
         invoke_signed(
             &ix,
             &[source, destination, authority, token_program],
