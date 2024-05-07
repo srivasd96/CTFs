@@ -68,3 +68,23 @@ pub fn ix_pay_create_fee(
         data: FarmInstruction::PayFarmFee(amount).try_to_vec().unwrap(),
     }
 }
+
+// Helper function to Create the Farm 
+pub fn ix_create_farm(
+    farm_id: &Pubkey,
+    authority: &Pubkey,
+    creator: &Pubkey,
+    farm_program_id: &Pubkey,
+    nonce: u8,
+) -> Instruction {
+    let accounts = vec![
+        AccountMeta::new(*farm_id, false),
+        AccountMeta::new_readonly(*authority, false),
+        AccountMeta::new(*creator, true)
+    ];
+    Instruction {
+        program_id: *farm_program_id,
+        accounts,
+        data: FarmInstruction::Create{nonce:(nonce)}.try_to_vec().unwrap(),
+    }
+}
